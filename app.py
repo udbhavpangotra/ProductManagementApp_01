@@ -6,16 +6,18 @@ import streamlit as st
 # Load the JSON object
 url = "https://www.reddit.com/r/AskMen/new/.json"
 response = urllib.request.urlopen(url)
-data = json.loads(response.read())
+data = json.load(response)
 print("Script is running 0")
 
 # Print the JSON data
 print(data)
 
-
 # Clean the data
-df = pd.DataFrame(data["data"]["children"])
-df = df[["title", "score", "created_utc"]]
+df = pd.DataFrame([{
+    "title": post["data"]["title"],
+    "score": post["data"]["score"],
+    "created_utc": post["data"]["created_utc"]
+} for post in data["data"]["children"]])
 df = df.dropna()
 
 # Create a Streamlit app

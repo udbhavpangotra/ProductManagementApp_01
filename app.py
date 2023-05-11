@@ -1,11 +1,17 @@
-import streamlit as st
-import requests
+import json
 import pandas as pd
+import urllib.request
+import streamlit as st
 
-# Scrape the data from AskMen
-url = "https://www.reddit.com/r/AskMen/top/.json"
-response = requests.get(url)
-data = response.json()
+# Load the JSON object
+url = "https://www.reddit.com/r/AskMen/new/.json"
+response = urllib.request.urlopen(url)
+data = json.loads(response.read())
+print("Script is running 0")
+
+# Print the JSON data
+print(data)
+
 
 # Clean the data
 df = pd.DataFrame(data["data"]["children"])

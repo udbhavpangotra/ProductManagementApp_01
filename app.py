@@ -1,39 +1,36 @@
-import json
-import pandas as pd
-import urllib.request
 import streamlit as st
-import altair as alt
+import pandas as pd
+import numpy as np
 
+st.title('Uber pickups in NYC')
 
-# Load the JSON object
-url = "https://www.reddit.com/r/AskMen/new/.json"
-response = urllib.request.urlopen(url)
-data = json.load(response)
-print("Script is running 0")
+DATE_COLUMN = 'date/time'
+DATA_URL = ('https://s3-us-west-2.amazonaws.com/'
+            'streamlit-demo-data/uber-raw-data-sep14.csv.gz')
 
-# Use json_normalize to create a DataFrame from the JSON data
-df = pd.json_normalize(data, record_path=["data", "children"])
+@st.cache_data
+def load_data(nrows):
+    data = pd.read_csv(DATA_URL, nrows=nrows)
+    lowercase = lambda x: str(x).lower()
+    data.rename(lowercase, axis='columns', inplace=True)
+    data[DATE_COLUMN] = pd.to_datetime(data[DATE_COLUMN])
+    return data
 
-# Clean the data
-df = df.dropna()
+data_load_state = st.text('Loading data...')
+data = load_data(10000)
+data_load_state.text("Done! (using st.cache_data)")
 
-# Create a Streamlit app
-st.title("AskMen Top Posts")
-st.write("This app showcases the top posts on AskMen.")
+if st.checkbox('Show raw data'):
+    st.subheader('Raw data')
+    st.write(data)
 
-# Display the data in the app
-st.dataframe(df)
-print(df.head(1))
-print(df.columns)
+st.subheader('Number of pickups by hour')
+hist_values = np.histogram(data[DATE_COLUMN].dt.hour, bins=24, range=(0,24))[0]
+st.bar_chart(hist_values)
 
-# Create a bar chart of upvotes by title
-chart = alt.Chart(df).mark_bar().encode(
-    x='data.score:Q',
-    y="data.title:N"
-).properties(
-    width=500,
-    height=400
-)
+# Some number in the range 0-23
+hour_to_filter = st.slider('hour', 0, 23, 17)
+filtered_data = data[data[DATE_COLUMN].dt.hour == hour_to_filter]
 
-# Display the chart in the app
-st.altair_chart(chart)
+st.subheader('Map of all pickups at %s:00' % hour_to_filter)
+st.map(filtered_data)
